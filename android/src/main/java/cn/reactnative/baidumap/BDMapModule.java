@@ -3,6 +3,7 @@ package cn.reactnative.baidumap;
 import android.app.Activity;
 import android.location.Geocoder;
 import android.os.AsyncTask;
+import android.util.Log;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
@@ -25,6 +26,16 @@ import com.baidu.mapapi.search.poi.PoiNearbySearchOption;
 import com.baidu.mapapi.search.poi.PoiResult;
 import com.baidu.mapapi.search.poi.PoiSearch;
 import com.baidu.mapapi.search.poi.PoiSortType;
+import com.baidu.mapapi.search.route.BikingRouteResult;
+import com.baidu.mapapi.search.route.DrivingRouteLine;
+import com.baidu.mapapi.search.route.DrivingRoutePlanOption;
+import com.baidu.mapapi.search.route.DrivingRouteResult;
+import com.baidu.mapapi.search.route.OnGetRoutePlanResultListener;
+import com.baidu.mapapi.search.route.PlanNode;
+import com.baidu.mapapi.search.route.RoutePlanSearch;
+import com.baidu.mapapi.search.route.SuggestAddrInfo;
+import com.baidu.mapapi.search.route.TransitRouteResult;
+import com.baidu.mapapi.search.route.WalkingRouteResult;
 import com.baidu.mapapi.utils.DistanceUtil;
 import com.baidu.mapapi.utils.poi.BaiduMapPoiSearch;
 import com.facebook.react.bridge.Arguments;
@@ -39,6 +50,7 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.RCTNativeAppEventEmitter;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,6 +62,7 @@ public class BDMapModule extends ReactContextBaseJavaModule implements BDLocatio
     LocationClient mClient = null;
     public BDMapModule(ReactApplicationContext reactContext) {
         super(reactContext);
+
     }
 
     @Override
@@ -306,5 +319,71 @@ public class BDMapModule extends ReactContextBaseJavaModule implements BDLocatio
                 });
             }
         });
+    }
+    @ReactMethod
+    public void getDrivingRouteDistance(ReadableMap start, ReadableMap end, final Promise promise) {
+        String startCity = null;
+        String startDetail = null;
+        String endCity = null;
+        String endDetail = null;
+        if (start.hasKey("startCity")){
+            startCity =  start.getString("startCity");
+        }
+        if (start.hasKey("startDetail")){
+            startDetail =  start.getString("startDetail");
+        }
+        if (end.hasKey("endCity")){
+            endCity =  end.getString("endCity");
+        }
+        if (end.hasKey("endDetail")){
+            endDetail =  end.getString("endDetail");
+        }
+        if(startCity!=null&&startDetail!=null&&endCity!=null&&endDetail!=null){
+            RoutePlanSearch mSearch = RoutePlanSearch.newInstance();
+            PlanNode stNode = PlanNode.withCityNameAndPlaceName(startCity, startDetail);
+            PlanNode enNode = PlanNode.withCityNameAndPlaceName(endCity, endDetail);
+            mSearch.setOnGetRoutePlanResultListener(new OnGetRoutePlanResultListener() {
+                @Override
+                public void onGetWalkingRouteResult(WalkingRouteResult result) {
+                }
+
+                @Override
+                public void onGetTransitRouteResult(TransitRouteResult result) {
+                }
+
+                @Override
+                public void onGetDrivingRouteResult(DrivingRouteResult result) {
+                    //驾车
+                    if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+                        promise.reject("404","抱歉未找到结果");
+                    }
+                    if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
+                        //起终点或途经点地址有岐义，通过以下接口获取建议查询信息
+                        SuggestAddrInfo info= result.getSuggestAddrInfo();
+                        WritableMap map = Arguments.createMap();
+                        map.putString("startCity",info.getSuggestStartCity()+"");
+                        map.putString("endCity",info.getSuggestEndCity()+"");
+                        promise.resolve(map);
+                        return;
+                    }
+                    if (result.error == SearchResult.ERRORNO.NO_ERROR) {
+                        DrivingRouteLine line = result.getRouteLines().get(0);
+                        WritableMap map = Arguments.createMap();
+                        map.putString("duration",line.getDuration()+"");
+                        map.putString("distance",line.getDistance()+"");
+                        promise.resolve(map);
+                    }
+                }
+
+                @Override
+                public void onGetBikingRouteResult(BikingRouteResult result) {
+                }
+            });
+            mSearch.drivingSearch((new DrivingRoutePlanOption())
+                    .from(stNode)
+                    .to(enNode));
+        }else{
+            promise.reject("","请给出两个完整的地址");
+        }
     }
 }

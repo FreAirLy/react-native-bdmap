@@ -70,5 +70,6 @@ exports.getLocation = async function(options) {
 
 exports.geoReverse = NativeBDMap.geoReverse;
 exports.poiSearch = NativeBDMap.poiSearch;
+exports.getDrivingRouteDistance = NativeBDMap.getDrivingRouteDistance;
 
 exports.BDMapView = require('./BDMapView');

@@ -1,34 +1,28 @@
 package cn.reactnative.baidumap;
 
-import android.view.View;
+import android.util.Log;
 
 import com.baidu.mapapi.map.BaiduMap;
-import com.baidu.mapapi.map.MapStatus;
-import com.baidu.mapapi.map.MapStatusUpdate;
+import com.baidu.mapapi.map.LogoPosition;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
-import com.baidu.mapapi.map.Overlay;
+import com.baidu.mapapi.map.UiSettings;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.model.LatLngBounds;
-import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.common.MapBuilder;
 import com.baidu.mapapi.map.MapView;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.ViewGroupManager;
 import com.facebook.react.uimanager.annotations.ReactProp;
-import com.facebook.react.uimanager.events.RCTEventEmitter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Created by tdzl2003 on 4/23/16.
  */
 public class BDMapManager extends ViewGroupManager<MapView>  {
+
     @Override
     public String getName() {
         return "RCTBDMapView";
@@ -52,6 +46,66 @@ public class BDMapManager extends ViewGroupManager<MapView>  {
     @Override
     public void onDropViewInstance(MapView view) {
         BDMapExtraData.getExtraData(view).onDropViewInstance();
+    }
+    @ReactProp(name="allGesturesState")
+    public void setAllGesturesEnabled(MapView view, boolean enabled) {
+        view.showScaleControl(enabled);
+        BaiduMap mBaiduMap = view.getMap();
+        UiSettings mUiSettings = mBaiduMap.getUiSettings();
+        //禁用手势
+        mUiSettings.setAllGesturesEnabled(enabled);
+    }
+    @ReactProp(name="showScaleControl")
+    public void setScaleControlEnabled(MapView view, boolean enabled) {
+        view.showScaleControl(enabled);
+    }
+    @ReactProp(name="showZoomControls")
+    public void setZoomControlsEnabled(MapView view, boolean enabled) {
+        view.showZoomControls(enabled);
+    }
+    @ReactProp(name="logoPosition")
+    public void setLogoPosition(MapView view, String region) {
+        if(region != null){
+            LogoPosition position ;
+            switch (region){
+                case "leftTop":
+                    position = LogoPosition.logoPostionleftTop;
+                    break;
+                case "centerBottom":
+                    position = LogoPosition.logoPostionCenterBottom;
+                    break;
+                case "centerTop":
+                    position = LogoPosition.logoPostionCenterTop;
+                    break;
+                case "rightBottom":
+                    position = LogoPosition.logoPostionRightBottom;
+                    break;
+                case "rightTop":
+                    position = LogoPosition.logoPostionRightTop;
+                    break;
+                default:
+                    position = LogoPosition.logoPostionleftBottom;
+                    break;
+            }
+            view.setLogoPosition(position);
+        }else{
+            view.setLogoPosition(LogoPosition.logoPostionleftBottom);
+        }
+
+    }
+    @ReactProp(name="logoCustomPosition")
+    public void setCustomLogoPosition(MapView view, ReadableMap region) {
+        if(region != null){
+            int paddingLeft = region.hasKey("paddingLeft") ? region.getInt("paddingLeft"):0;
+            int paddingTop = region.hasKey("paddingTop") ? region.getInt("paddingTop"):0;
+            int paddingRight = region.hasKey("paddingRight") ? region.getInt("paddingRight"):0;
+            int paddingBottom = region.hasKey("paddingBottom") ? region.getInt("paddingBottom"):0;
+            Log.e("tt","paddingLeft:"+paddingLeft+",paddingTop:"+paddingTop+",paddingRight:"+paddingRight+",paddingBottom:"+paddingBottom);
+            view.getMap().setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom);
+        }else{
+            view.setLogoPosition(LogoPosition.logoPostionleftBottom);
+        }
+
     }
 
     @ReactProp(name="showsUserLocation")
