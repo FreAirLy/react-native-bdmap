@@ -14,12 +14,13 @@
 #import "UIView+React.h"
 #import "RCTImageLoader.h"
 
-@interface RCTBMKMapView : BMKMapView
+
+@interface RCTBMKMapView : BMKMapView<BMKRouteSearchDelegate>
 
 @property (nonatomic, copy) RCTDirectEventBlock onLoad;
 @property (nonatomic, copy) RCTDirectEventBlock onRegionChange;
 @property (nonatomic, copy) RCTDirectEventBlock onRegionChangeComplete;
-
+@property (nonatomic) BOOL showZoomControls;
 @end
 
 @implementation RCTBMKMapView{
@@ -31,6 +32,7 @@
     self = [super init];
     if (self) {
         _markers = [NSMutableArray new];
+        self.ChangeWithTouchPointCenterEnabled = YES;
     }
     return self;
 }
@@ -57,17 +59,17 @@
 {
     NSMutableDictionary* oldMarkers = [[NSMutableDictionary alloc] init];
     NSMutableDictionary* newMarkers = [[NSMutableDictionary alloc] init];
-    
+
     NSArray* oldAnnos = [self annotations];
     for (int i = [oldAnnos count] - 1; i>=0; i--) {
         RCTBDMapMarker* anno = oldAnnos[i];
         [oldMarkers setObject:anno forKey:anno.key];
     }
-    
+
     for (int i = [data count] - 1; i >=0; i--) {
         NSDictionary* dict = data[i];
         NSString* key = dict[@"id"];
-        
+
         [newMarkers setObject:dict forKey:key];
         RCTBDMapMarker* marker = oldMarkers[key];
         if (marker == nil) {
@@ -77,9 +79,9 @@
             [self addAnnotation:marker];
         }
         marker.coordinate = [RCTConvert CLLocationCoordinate2D:dict];
-        
+
         NSString* imageUrl = dict[@"iconUrl"];
-        
+
         if (imageUrl) {
             if (![marker.imageUrl isEqualToString:imageUrl]) {
               marker.imageUrl = imageUrl;
@@ -96,7 +98,7 @@
             marker.image = nil;
         }
     }
-    
+
     NSMutableArray* removedMarkers = [[NSMutableArray alloc] init];
     for (int i = [oldAnnos count] - 1; i>=0; i--) {
         RCTBDMapMarker* anno = oldAnnos[i];
@@ -107,6 +109,9 @@
     if (removedMarkers.count > 0) {
         [self removeAnnotations:removedMarkers];
     }
+}
+-(void)setShowZoomControls:(BOOL)showZoomControls{
+    NSLog(@"showZoomControls");
 }
 
 @end
@@ -125,6 +130,59 @@ RCT_EXPORT_MODULE(RCTBDMapViewManager)
 RCT_EXPORT_VIEW_PROPERTY(onLoad, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onRegionChange, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onRegionChangeComplete, RCTDirectEventBlock)
+//比例尺
+RCT_EXPORT_VIEW_PROPERTY(showMapScaleBar, BOOL)
+//仰角
+RCT_EXPORT_VIEW_PROPERTY(overlookEnabled, BOOL)
+//放大缩小按钮
+RCT_EXPORT_VIEW_PROPERTY(showZoomControls, BOOL)
+
+//logo位置
+RCT_CUSTOM_VIEW_PROPERTY(logoPosition,NSString*,RCTBMKMapView)
+{
+    if (json) {
+        BMKLogoPosition position ;
+        if([json isEqualToString:@"leftTop"]){
+            position = BMKLogoPositionLeftTop;
+        }else if ([json isEqualToString:@"centerBottom"]){
+            position = BMKLogoPositionCenterBottom;
+        }else if ([json isEqualToString:@"centerTop"]){
+            position = BMKLogoPositionCenterTop;
+        }else if ([json isEqualToString:@"rightBottom"]){
+            position = BMKLogoPositionRightBottom;
+        }else if ([json isEqualToString:@"rightTop"]){
+            position = BMKLogoPositionRightTop;
+        }else{
+            position = BMKLogoPositionLeftBottom;
+        }
+        [view setLogoPosition:position];
+    }
+}
+RCT_CUSTOM_VIEW_PROPERTY(mapPadding,NSDictionary*,RCTBMKMapView)
+{
+    if (json) {
+//        NSLog(@"json===%@",json);
+        UIEdgeInsets edge ;
+//        top, left, bottom, right;
+        if ([json valueForKey: @"paddingTop"] != nil ) {
+            edge.top = [[json valueForKey: @"paddingTop"] floatValue];
+        }
+        if ([json valueForKey: @"paddingLeft"] != nil ) {
+            edge.left = [[json valueForKey: @"paddingLeft"] floatValue];
+        }
+        if ([json valueForKey: @"paddingBottom"] != nil ) {
+            edge.bottom = [[json valueForKey: @"paddingBottom"] floatValue];
+
+        }
+        if ([json valueForKey: @"paddingRight"] != nil ) {
+            edge.right = [[json valueForKey: @"paddingRight"] floatValue];
+        }
+//        NSLog(@"%f-%f-%f-%f",edge.top,edge.left,edge.bottom,edge.right);
+//        [view setMapPadding:edge];
+//        TODO
+    }
+}
+
 
 RCT_CUSTOM_VIEW_PROPERTY(region, BMKCoordinateRegion, RCTBMKMapView)
 {

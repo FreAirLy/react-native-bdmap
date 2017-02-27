@@ -47,21 +47,30 @@ public class BDMapManager extends ViewGroupManager<MapView>  {
     public void onDropViewInstance(MapView view) {
         BDMapExtraData.getExtraData(view).onDropViewInstance();
     }
-    @ReactProp(name="allGesturesState")
-    public void setAllGesturesEnabled(MapView view, boolean enabled) {
-        view.showScaleControl(enabled);
+    @ReactProp(name="overlookEnabled")
+    public void setOverlookEnabled(MapView view, boolean enabled) {
         BaiduMap mBaiduMap = view.getMap();
         UiSettings mUiSettings = mBaiduMap.getUiSettings();
-        //禁用手势
-        mUiSettings.setAllGesturesEnabled(enabled);
+        //是否禁用仰角
+        mUiSettings.setOverlookingGesturesEnabled(enabled);
     }
-    @ReactProp(name="showScaleControl")
-    public void setScaleControlEnabled(MapView view, boolean enabled) {
+    //比例尺
+    @ReactProp(name="showMapScaleBar")
+    public void setShowMapScaleBar(MapView view, boolean enabled) {
         view.showScaleControl(enabled);
     }
+    //放大缩小按钮
     @ReactProp(name="showZoomControls")
-    public void setZoomControlsEnabled(MapView view, boolean enabled) {
+    public void setShowZoomControls(MapView view, boolean enabled) {
         view.showZoomControls(enabled);
+    }
+    //双指
+    @ReactProp(name="zoomEnabled")
+    public void setZoomEnabled(MapView view, boolean enabled) {
+        BaiduMap mBaiduMap = view.getMap();
+        UiSettings mUiSettings = mBaiduMap.getUiSettings();
+        //是否禁用双指
+        mUiSettings.setZoomGesturesEnabled(enabled);
     }
     @ReactProp(name="logoPosition")
     public void setLogoPosition(MapView view, String region) {
@@ -91,10 +100,9 @@ public class BDMapManager extends ViewGroupManager<MapView>  {
         }else{
             view.setLogoPosition(LogoPosition.logoPostionleftBottom);
         }
-
     }
-    @ReactProp(name="logoCustomPosition")
-    public void setCustomLogoPosition(MapView view, ReadableMap region) {
+    @ReactProp(name="mapPadding")
+    public void setMapPadding(MapView view, ReadableMap region) {
         if(region != null){
             int paddingLeft = region.hasKey("paddingLeft") ? region.getInt("paddingLeft"):0;
             int paddingTop = region.hasKey("paddingTop") ? region.getInt("paddingTop"):0;

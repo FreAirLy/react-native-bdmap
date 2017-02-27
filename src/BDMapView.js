@@ -24,19 +24,20 @@ class BDMapView extends React.Component {
         blurMarkerWhileMove: PropTypes.bool,
         //自定义相关属性（android有效）
         //logo位置
-        logoCustomPosition: React.PropTypes.shape({
+        mapPadding: React.PropTypes.shape({
             paddingLeft: React.PropTypes.number.isRequired,
             paddingTop: React.PropTypes.number.isRequired,
-
             paddingRight: React.PropTypes.number.isRequired,
             paddingBottom: React.PropTypes.number.isRequired,
         }),
         //比例尺
-        showScaleControl: PropTypes.bool,
-        //放大缩小
-        showZoomControls: PropTypes.bool,
-        //手势
-        allGesturesState: PropTypes.bool,
+        showMapScaleBar: PropTypes.bool,
+        //双指缩放
+        zoomEnabled: PropTypes.bool,
+        //放大缩小按钮
+        showZoomControls:PropTypes.bool,
+        //仰角
+        overlookEnabled: PropTypes.bool,
         //logo位置
         logoPosition: PropTypes.oneOf([
             'leftBottom',
@@ -127,6 +128,14 @@ class BDMapView extends React.Component {
     static defaultProps = {
         showsUserLocation: false,
         blurMarkerWhileMove: false,
+        zoomEnabled:true,
+        showMapScaleBar: true,
+        //双指缩放
+        zoomEnabled: true,
+        //放大缩小按钮
+        showZoomControls:false,
+        //仰角
+        overlookEnabled: false
     };
     constructor(props){
         super(props);

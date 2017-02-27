@@ -96,6 +96,38 @@ static NSMutableArray* arr = [[NSMutableArray alloc] init];
 
 @end
 
+@interface LinesSearchResult : NSObject<BMKRouteSearchDelegate>
+-initWithResolve: (RCTPromiseResolveBlock) resolve reject: (RCTPromiseRejectBlock) reject;
+@end
+
+@implementation LinesSearchResult
+{
+    RCTPromiseResolveBlock _resolve;
+    RCTPromiseRejectBlock _reject;
+}
+
+- (instancetype)initWithResolve: (RCTPromiseResolveBlock) resolve reject: (RCTPromiseRejectBlock) reject{
+    if ([self init]) {
+        self->_resolve = resolve;
+        self->_reject = reject;
+        return self;
+    }
+    return nil;
+}
+-(void)onGetDrivingRouteResult:(BMKRouteSearch *)searcher result:(BMKDrivingRouteResult *)result errorCode:(BMKSearchErrorCode)error{
+    if (error != BMK_SEARCH_NO_ERROR){
+        self->_reject([NSString stringWithFormat:@"%d", (int)error], @"Search failed", nil);
+        return;
+    }
+    BMKDrivingRouteLine* lines = (BMKDrivingRouteLine*)[result.routes objectAtIndex:0];
+    NSLog(@"duration=%d,distance=%d",[lines.duration seconds],lines.distance);
+    self->_resolve(@{
+                     @"distance": @(lines.distance),
+                     @"duration": @([lines.duration seconds]),
+                     });
+}
+@end
+
 @implementation RCTBDMap {
     BMKLocationService* _locService;
 }
@@ -117,18 +149,18 @@ RCT_EXPORT_MODULE(RCTBaiduMap);
 - (instancetype)init
 {
     self = [super init];
-    
+
     // 初始化ApiKey
     if (_mapManager == nil) {
         NSString *apiKey = [[[NSBundle mainBundle] infoDictionary] valueForKey:@"BDMapApiKey"];
         _mapManager = [[BMKMapManager alloc] init];
         BOOL ret = [_mapManager start:apiKey  generalDelegate:nil];
     }
-    
+
     // 初始化定位服务
     _locService = [[BMKLocationService alloc]init];
     _locService.delegate = self;
-    
+
     return self;
 }
 
@@ -160,7 +192,7 @@ RCT_EXPORT_METHOD(geoReverse: (CLLocationCoordinate2D) pt resolve:(RCTPromiseRes
 {
     BMKGeoCodeSearch* _searcher =[[BMKGeoCodeSearch alloc]init];
     _searcher.delegate = [ReverseGeoCodeResult resultWithResolve:resolve reject:reject];
-    
+
     BMKReverseGeoCodeOption * options = [[BMKReverseGeoCodeOption alloc]init];
     options.reverseGeoPoint = pt;
     BOOL flag = [_searcher reverseGeoCode:options];
@@ -174,7 +206,7 @@ RCT_EXPORT_METHOD(poiSearch:(CLLocationCoordinate2D) pt option: (NSDictionary*) 
 {
     BMKPoiSearch* _searcher = [[BMKPoiSearch alloc] init];
     _searcher.delegate = [[PoiSearchResult alloc] initWithResolve: resolve reject: reject];
-    
+
     BMKNearbySearchOption * options = [[BMKNearbySearchOption alloc] init];
     options.location =pt;
     if ( [opt valueForKey: @"keyword"] != nil){
@@ -202,6 +234,56 @@ RCT_EXPORT_METHOD(poiSearch:(CLLocationCoordinate2D) pt option: (NSDictionary*) 
         reject(@"invokeFailed", @"reverseGeoCode return false", nil);
         return;
     }
+}
+//获取时间 距离
+RCT_EXPORT_METHOD(getDrivingRouteDistance:(NSDictionary*) startPlace withEndPlace:(NSDictionary*) endPlace resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
+{
+    BMKRouteSearch* _routesearch = [[BMKRouteSearch alloc] init];
+    _routesearch.delegate = [[LinesSearchResult alloc] initWithResolve: resolve reject: reject];
+
+    BMKPlanNode* start = [[BMKPlanNode alloc]init];
+    BOOL canSearchabled = true;
+    if ( [startPlace valueForKey: @"startCity"] != nil) {
+        start.cityName = [startPlace valueForKey:@"startCity"];
+    }else{
+        canSearchabled = false;
+    }
+    if ( [startPlace valueForKey: @"startDetail"] != nil) {
+        start.name = [startPlace valueForKey:@"startDetail"];
+    }else{
+        canSearchabled = false;
+    }
+    BMKPlanNode* end = [[BMKPlanNode alloc]init];
+
+    if ( [endPlace valueForKey: @"endCity"] != nil) {
+        end.cityName = [endPlace valueForKey:@"endCity"];
+    }else{
+        canSearchabled = false;
+    }
+    if ( [endPlace valueForKey: @"endDetail"] != nil) {
+        end.name = [endPlace valueForKey:@"endDetail"];
+    }else{
+        canSearchabled = false;
+    }
+    if (!canSearchabled) {
+        reject(@"invokeFailed", @"reverseGeoCode return false", nil);
+        return;
+    }
+    BMKDrivingRoutePlanOption *drivingRouteSearchOption = [[BMKDrivingRoutePlanOption alloc]init];
+//    transitRouteSearchOption.city= @"北京市";
+    drivingRouteSearchOption.from = start;
+    drivingRouteSearchOption.to = end;
+    BOOL flag = [_routesearch drivingSearch:drivingRouteSearchOption];
+
+    if(flag)
+    {
+        NSLog(@"bus检索发送成功");
+    }
+    else
+    {
+        NSLog(@"bus检索发送失败");
+    }
+
 }
 
 //处理位置坐标更新
